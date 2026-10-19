@@ -1,0 +1,60 @@
+:root { color-scheme: light; --encre: #000; --gris: #6b6560; --gris-clair: #c4bab1 }
+body { margin: 0 auto; max-width: 1440px; padding: 24px 16px; box-sizing: border-box;
+       color: var(--encre); background: #fff;
+       font-family: Palatino, 'Palatino Linotype', 'URW Palladio L', P052, serif;
+       font-size: 15px; line-height: 1.4 }
+a { color: var(--encre) }
+.page { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 48px }
+.panneau { height: calc(100vh - 48px); overflow-y: auto; padding-right: 12px; scrollbar-gutter: stable }
+h1 { font-size: 24px; font-weight: normal; margin: 0 0 8px }
+.intro { font-size: 15px; margin: 0 0 20px }
+.methode { font-size: 14px; margin-top: 40px }
+.soldes { margin-bottom: 12px }
+.solde { display: grid; grid-template-columns: 1fr 110px 48px; font-variant-numeric: tabular-nums }
+.solde:first-child { font-weight: bold }
+.solde output { text-align: right }
+h2 { font-size: 16px; font-weight: bold; margin: 0 }
+.ligne { display: grid; grid-template-columns: 1fr 80px 94px; gap: 10px; align-items: center; padding: 3px 0 }
+.titre { margin: 28px 0 6px; align-items: end }
+.titre span { font-size: 12px; text-align: right }
+.ligne label { font-size: 14px; line-height: 1.25 }
+.ligne input { width: 100%; box-sizing: border-box; border: 1px solid var(--gris-clair); border-radius: 2px;
+               font-family: inherit; font-size: 14px; padding: 2px 4px; text-align: right; background: #fff;
+               font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield }
+.ligne input::-webkit-inner-spin-button, .ligne input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0 }
+.modif { display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+         font-size: 14px; font-variant-numeric: tabular-nums }
+.modif[hidden] { display: none }
+button { font-family: inherit; font-size: 14px; padding: 0; background: none; border: none;
+         color: var(--encre); cursor: pointer }
+button:hover { text-decoration: underline }
+.modif button { font-size: 18px; line-height: 1 }
+.modif button:hover { text-decoration: none }
+.actions { margin: 0 0 8px; font-size: 14px }
+.graphique { position: sticky; top: 24px; align-self: start }
+.bascules { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 4px; margin-bottom: 10px; font-size: 13px }
+.intitule { margin-right: 4px }
+.bascules label { cursor: pointer }
+.bascules input { position: absolute; width: 0; height: 0; opacity: 0 }
+.bascules label span { display: inline-block; padding: 1px 7px; border: 1px solid transparent; border-radius: 6px }
+.bascules label:hover span { border-color: var(--gris-clair) }
+.bascules input:checked + span { border-color: var(--encre) }
+.bascules input:focus-visible + span { outline: 2px solid var(--encre); outline-offset: 2px }
+#figure { display: block; width: 100%; height: auto; margin-top: 12px; font-family: inherit }
+#figure text { font-size: 14px; fill: var(--encre) }
+#figure .graduation { text-anchor: end; dominant-baseline: middle; fill: var(--gris) }
+#figure .categorie { dominant-baseline: hanging; font-size: 13px }
+#figure .segment { stroke: #fff; stroke-width: 1 }
+#figure .zero { stroke: var(--gris-clair); stroke-width: 1 }
+#figure .net { stroke: var(--encre); stroke-width: 2 }
+.legende { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; margin: 4px 0 12px }
+.legende > span { display: inline-flex; align-items: center; gap: 6px }
+.carre { width: 10px; height: 10px }
+.trait { width: 16px; border-top: 2px solid var(--encre) }
+body:has(#mode_niveau:checked) .legende .variation,
+body:has(#mode_variation:checked) .legende .niveau { display: none }
+@media (max-width: 900px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 24px }
+  .panneau { height: auto; overflow: visible; padding-right: 0; order: 2 }
+  .graphique { position: static }
+  }
