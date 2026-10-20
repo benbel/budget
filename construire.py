@@ -252,7 +252,7 @@ def page(lignes, ventilations):
         + f'<section class="methode" id="methode"><h2>Méthode</h2>{METHODE}</section>'
         '</form>'
         '<div class="graphique">'
-        + groupe_bascules("mode", [("variation", "Effets des réformes"), ("niveau", "Nouveaux montants avec les réformes")])
+        + groupe_bascules("mode", [("variation", "Effets des réformes, par rapport à la situation actuelle"), ("niveau", "Solde net de la redistribution (avec les réformes)")])
         + groupe_bascules("ventilation", VENTILATIONS, "Voir les résultats par")
         + groupe_bascules(
             "unite",
