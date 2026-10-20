@@ -67,6 +67,16 @@ INTRO = (
     "les prestations sociales et les services publics. "
     )
 
+REFORME = ("Enseignement", 20)
+
+VISITE = [
+    INTRO.strip(),
+    "Vous pouvez modifier les montants des prélèvements et des dépenses.",
+    "Les effets par type de ménage sont calculés et affichés ici. Par exemple, une hausse de 20 Md€ "
+    "des dépenses d'enseignement augmenterait le revenu élargi (services publics compris) "
+    "des 5 % les moins aisés de {effet} %.",
+    ]
+
 METHODE = (
     '<p>Les données sont issues des '
     '<a href="https://www.insee.fr/fr/statistiques/8574663?sommaire=8574832#consulter">'
@@ -213,7 +223,12 @@ def element_legende(classe, texte, couleur, mode):
 
 
 def page(lignes, ventilations):
-    donnees = json.dumps({"lignes": lignes, "ventilations": ventilations}, ensure_ascii=False)
+    groupes = [{"groupe": groupe, "titre": titre, "couleur": couleur} for groupe, titre, couleur in GROUPES]
+    reforme = {"ligne": next(i for i, ligne in enumerate(lignes) if ligne["libelle"] == REFORME[0]), "ecart": REFORME[1]}
+    donnees = json.dumps(
+        {"groupes": groupes, "lignes": lignes, "ventilations": ventilations, "reforme": reforme, "visite": VISITE},
+        ensure_ascii=False,
+        )
     legende = [element_legende("carre", titre, couleur, "") for _, titre, couleur in GROUPES]
     legende.append(element_legende("trait", "Effet net", "", "variation"))
     legende.append(element_legende("trait", "Solde net", "", "niveau"))
@@ -226,7 +241,8 @@ def page(lignes, ventilations):
         '</head><body><div class="page">'
         '<form class="panneau" id="simulation">'
         '<h1>Le budget dont vous êtes le héros</h1>'
-        f'<p class="intro">{e(INTRO)}[<a href="#methode">voir méthode</a>]</p>'
+        f'<p class="intro">{e(INTRO)}[<a href="#methode">voir méthode</a>] '
+        '[<a href="#" id="revoir">présentation</a>]</p>'
         '<div class="soldes">'
         + ligne_solde("economie", "Économie budgétaire")
         + ligne_solde("economie_prelevements", "dont impôts et cotisations")
@@ -234,7 +250,7 @@ def page(lignes, ventilations):
         + '</div>'
         '<div class="actions"><button type="reset">Tout réinitialiser</button></div>'
         + "".join(bloc_saisie(groupe, titre, lignes) for groupe, titre, _ in GROUPES)
-        + f'<section class="methode" id="methode">{METHODE}</section>'
+        + f'<section class="methode" id="methode"><h2>Méthode</h2>{METHODE}</section>'
         '</form>'
         '<div class="graphique">'
         + groupe_bascules("mode", [("variation", "Effets des réformes"), ("niveau", "Nouveaux montants avec les réformes")])
@@ -249,10 +265,13 @@ def page(lignes, ventilations):
                 ],
             "Unité :",
             )
-        + '<svg id="figure" viewBox="0 0 800 520" role="img"></svg>'
+        + '<svg id="figure" role="img"></svg>'
+        + '<div id="detail" hidden></div>'
         + f'<div class="legende">{"".join(legende)}</div>'
         '</div>'
         '</div>'
+        '<div id="visite" hidden><div class="carte" role="dialog" aria-modal="true" aria-live="polite">'
+        '<p></p><button type="button"></button></div></div>'
         f'<script>const DONNEES = {donnees};</script>'
         '<script src="simulation.js"></script>'
         '</body></html>'
