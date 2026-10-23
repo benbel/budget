@@ -7,10 +7,13 @@ from pathlib import Path
 
 import openpyxl
 
+import demographie
+
 ONGLET = "CND_2023"
 REVENU = "Revenu élargi après transferts publics (=D+I+II+III)"
 INDIVIDUS = "Nombre d'individus (en millions)"
 UC = "Nombre d'unités de consommation (en millions)"
+PRIMAIRE = "Revenu primaire élargi (D=A+B+C)"
 
 VENTILATIONS = [
     ("101", "niveau de vie (détaillé)"),
@@ -76,6 +79,68 @@ VISITE = [
     "des dépenses d'enseignement augmenterait le revenu élargi (services publics compris) "
     "des 5 % les moins aisés de {effet} %.",
     ]
+
+INTRO_DEMOGRAPHIE = (
+    "Cette page simule l'effet du vieillissement sur les impôts, les prestations et les services publics "
+    "en appliquant les montants versés ou perçus en 2023 aux projections de population jusqu'en 2070. "
+    )
+
+ANNEES_DEMOGRAPHIE = list(range(1962, 2071))
+
+CANAUX = [
+    ("cotisations", "Cotisations", "#7b4fa0", [
+        "Cotisations sociales retraite",
+        "Cotisations sociales chômage",
+        "Cotisations sociales famille",
+        "Autres cotisations sociales (maladie, invalidité, ATMP)",
+        ]),
+    ("sante", "Santé et autonomie", "#52a02c", [
+        "Santé",
+        "Action sociale (dépendance, handicap, petite enfance, etc.)",
+        "Invalidité",
+        "Autres revenus de remplacement (IJ, ATMP)",
+        "Remboursements des contrats collectifs de complémentaires santé",
+        "Frais de fonctionnement de la Sécurité sociale",
+        ]),
+    ("retraites", "Retraites", "#1d70b8", [
+        "Pensions de retraite",
+        ]),
+    ("autres", "Autres dépenses", "#00a3b4", [
+        "Dépenses collectives (administration générale, défense, police, justice, etc.)",
+        "Culture et loisirs",
+        "Allocations chômage",
+        "Exclusion sociale",
+        "Aides au logement et chèque énergie",
+        "Autres transferts et soldes avec le reste du monde",
+        ]),
+    ("jeunesse", "Enfance et éducation", "#d99a00", [
+        "Enseignement",
+        "Famille",
+        ]),
+    ("impots", "Impôts", "#c1121f", [
+        "Taxes sur les produits (TVA, TICPE, acises, DMTO, etc.)",
+        "Subventions sur les produits (transports, etc.)",
+        "Taxes sur la production (taxes patronales, TF, etc.)",
+        "Subventions sur la production (aides à l'apprentissage, aides sectorielles, etc.)",
+        "Impôt sur les sociétés",
+        "Contribution sociale généralisée (CSG)",
+        "Impôt sur le revenu (IR)",
+        "Autres impôts sur les revenus et le patrimoine (TH, ISF/IFI, CRDS, etc.)",
+        ]),
+    ]
+
+METHODE_DEMOGRAPHIE = (
+    '<p>Les montants de prélèvements, prestations et services publics sont ceux des '
+    '<a href="https://www.insee.fr/fr/statistiques/8574663?sommaire=8574832#consulter">'
+    'comptes nationaux distribués (Insee, 2023)</a> par âge moyen des adultes du ménage (18-29, 30-39, 40-49, '
+    '50-64 et 65 ans ou plus).</p>'
+    '<p>On suppose que les montants d\'une tranche d\'âge évoluent comme le nombre de personnes de cet âge, '
+    'sauf l\'enseignement et les prestations familiales, qui évoluent comme les populations de respectivement '
+    '3 à 24 ans et de 0 à 19 ans.</p>'
+    '<p>La population est projetée chaque année de 2023 à 2070 à partir des hypothèses de fécondité, '
+    'de mortalité et de migration des '
+    '<a href="https://www.insee.fr/fr/statistiques/8991068">projections de population 2026 de l\'Insee</a>.</p>'
+    )
 
 METHODE = (
     '<p>Les données sont issues des '
@@ -211,9 +276,9 @@ def bascule(nom, valeur, libelle, coche):
         )
 
 
-def groupe_bascules(nom, options, intitule=""):
+def groupe_bascules(nom, options, intitule="", cochee=0):
     debut = f'<span class="intitule">{e(intitule)}</span>' if intitule else ""
-    contenu = [bascule(nom, valeur, libelle, i == 0) for i, (valeur, libelle) in enumerate(options)]
+    contenu = [bascule(nom, valeur, libelle, i == cochee) for i, (valeur, libelle) in enumerate(options)]
     return f'<div class="bascules">{debut}{"".join(contenu)}</div>'
 
 
@@ -240,8 +305,10 @@ def page(lignes, ventilations):
         '<link rel="stylesheet" href="style.css">'
         '</head><body><div class="page">'
         '<form class="panneau" id="simulation">'
+        '<h1>Budget</h1>'
         f'<p class="intro">{e(INTRO)}[<a href="#methode">voir méthode</a>] '
-        '[<a href="#" id="revoir">présentation</a>]</p>'
+        '[<a href="#" id="revoir">présentation</a>] '
+        '[<a href="demographie.html">effets de la démographie</a>]</p>'
         '<div class="soldes">'
         + ligne_solde("economie", "Économie budgétaire")
         + ligne_solde("economie_prelevements", "dont impôts et cotisations")
@@ -272,8 +339,91 @@ def page(lignes, ventilations):
         '<div id="visite" hidden><div class="carte" role="dialog" aria-modal="true" aria-live="polite">'
         '<p></p><button type="button"></button></div></div>'
         f'<script>const DONNEES = {donnees};</script>'
+        '<script src="commun.js"></script>'
         '<script src="simulation.js"></script>'
         '</body></html>'
+        )
+
+
+def hypotheses():
+    return "".join(
+        '<div class="hypothese">'
+        f'<h2>{e(titre)}</h2>'
+        + groupe_bascules(
+            composante,
+            [(variante, libelle) for variante, libelle, _ in variantes],
+            cochee=1,
+            )
+        + '</div>'
+        for composante, titre, variantes in demographie.HYPOTHESES
+        )
+
+
+def canal(libelle):
+    return next(nom for nom, _, _, libelles in CANAUX if libelle in libelles)
+
+
+def page_demographie(lignes, scenarios):
+    canaux = [{"canal": nom, "titre": titre, "couleur": couleur} for nom, titre, couleur, _ in CANAUX]
+    avec_canal = [
+        {"libelle": ligne["libelle"], "groupe": ligne["groupe"], "canal": canal(ligne["libelle"])}
+        for ligne in lignes
+        ]
+    donnees = json.dumps(
+        {"canaux": canaux, "lignes": avec_canal, "annees": ANNEES_DEMOGRAPHIE, "scenarios": scenarios},
+        ensure_ascii=False,
+        )
+    legende = [element_legende("carre", titre, couleur, "") for _, titre, couleur, _ in CANAUX]
+    entete = "".join(f"<th>{annee}</th>" for annee in (2030, 2050, 2070))
+    return (
+        '<!doctype html>'
+        '<html lang="fr"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<title>Effets de la démographie sur le solde budgétaire</title>'
+        '<link rel="stylesheet" href="style.css">'
+        '</head><body><div class="page">'
+        '<form class="panneau" id="simulation">'
+        '<h1>Effets de la démographie sur le solde budgétaire</h1>'
+        f'<p class="intro">{e(INTRO_DEMOGRAPHIE)}[<a href="#methode">voir méthode</a>]</p>'
+        + hypotheses()
+        + '<table class="indicateurs">'
+        f'<thead><tr><th></th>{entete}</tr></thead>'
+        '<tbody id="indicateurs"></tbody>'
+        '</table>'
+        f'<section class="methode" id="methode"><h2>Méthode</h2>{METHODE_DEMOGRAPHIE}</section>'
+        '</form>'
+        '<div class="graphique">'
+        + groupe_bascules(
+            "unite",
+            [
+                ("md", "milliards d'euros de 2023"),
+                ("pct", "points de revenu primaire"),
+                ("personne", "€ par personne"),
+                ],
+            "Écart à 2023 en",
+            cochee=2,
+            )
+        + '<svg id="figure" role="img"></svg>'
+        + '<div id="detail" hidden></div>'
+        + f'<div class="legende aires">{"".join(legende)}</div>'
+        '</div>'
+        '</div>'
+        f'<script>const DONNEES = {donnees};</script>'
+        '<script src="commun.js"></script>'
+        '<script src="demographie.js"></script>'
+        '</body></html>'
+        )
+
+
+def preparer_scenarios(lignes):
+    _, valeurs = lire_feuille("103")
+    return demographie.scenarios(
+        [valeurs[ligne["libelle"]][:-1] for ligne in lignes],
+        valeurs[REVENU][:-1],
+        valeurs[PRIMAIRE][:-1],
+        valeurs[INDIVIDUS][:-1],
+        [ligne["libelle"] for ligne in lignes],
+        ANNEES_DEMOGRAPHIE,
         )
 
 
@@ -287,8 +437,9 @@ def construire():
     sortie = Path("site")
     sortie.mkdir(exist_ok=True)
     (sortie / "index.html").write_text(page(lignes, ventilations), encoding="utf-8")
-    shutil.copy("page/style.css", sortie / "style.css")
-    shutil.copy("page/simulation.js", sortie / "simulation.js")
+    (sortie / "demographie.html").write_text(page_demographie(lignes, preparer_scenarios(lignes)), encoding="utf-8")
+    for fichier in ("style.css", "commun.js", "simulation.js", "demographie.js"):
+        shutil.copy(f"page/{fichier}", sortie / fichier)
 
 
 construire()

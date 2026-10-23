@@ -4,38 +4,17 @@ const AXES = { personne: "€ par personne", pct: "% du revenu", uc: "€ par un
 const SUFFIXES = { personne: " €", pct: " %", uc: " €", md: " Md€" };
 const CHIFFRES = { personne: 0, pct: 2, uc: 0, md: 1 };
 const NETS = { variation: "Effet net", niveau: "Solde net" };
-const SVG = "http://www.w3.org/2000/svg";
 const HAUT = 36;
 const BAS = 130;
 const GAUCHE = 64;
 const DROITE = 8;
 const formulaire = document.getElementById("simulation");
-const figure = document.getElementById("figure");
-const detail = document.getElementById("detail");
-
-function nombre(x, chiffres) {
-  const arrondi = Math.abs(x) < 0.5 * 10 ** -chiffres ? 0 : x;
-  return arrondi.toLocaleString("fr-FR", { minimumFractionDigits: chiffres, maximumFractionDigits: chiffres });
-  }
-
-function signe(x) {
-  const texte = nombre(x, 1);
-  return x >= 0.05 ? "+" + texte : texte;
-  }
-
-function choix(nom) {
-  return document.querySelector("input[name=" + nom + "]:checked").value;
-  }
 
 function masses() {
   return LIGNES.map(function (ligne, i) {
     const valeur = document.getElementById("ligne" + i).valueAsNumber;
     return isNaN(valeur) ? ligne.defaut : valeur;
     });
-  }
-
-function somme(valeurs) {
-  return valeurs.reduce(function (a, b) { return a + b; }, 0);
   }
 
 function part(valeur, total) {
@@ -76,35 +55,9 @@ function series(valeurs, ventilation, mode) {
   return resultat;
   }
 
-function graduations(minimum, maximum) {
-  const etendue = Math.max(maximum - minimum, 1e-9);
-  const brut = etendue / 5;
-  const puissance = 10 ** Math.floor(Math.log10(brut));
-  const pas = [1, 2, 5, 10].map(function (k) { return k * puissance; }).find(function (p) { return p >= brut; });
-  const resultat = [];
-  for (let t = Math.ceil(minimum / pas) * pas; t <= maximum + 1e-9; t += pas) resultat.push(Math.round(t / pas) * pas);
-  return resultat;
-  }
-
-function element(nom, attributs, parent, texte) {
-  const noeud = document.createElementNS(SVG, nom);
-  Object.keys(attributs).forEach(function (cle) { noeud.setAttribute(cle, attributs[cle]); });
-  if (texte !== undefined) noeud.textContent = texte;
-  parent.appendChild(noeud);
-  return noeud;
-  }
-
 function montant(valeur, unite, avecSigne) {
   const plus = avecSigne && valeur >= 0.5 * 10 ** -CHIFFRES[unite];
   return (plus ? "+" : "") + nombre(valeur, CHIFFRES[unite]);
-  }
-
-function html(nom, classe, parent, texte) {
-  const noeud = document.createElement(nom);
-  if (classe) noeud.className = classe;
-  if (texte !== undefined) noeud.textContent = texte;
-  parent.appendChild(noeud);
-  return noeud;
   }
 
 function ligneDetail(parent, classe, libelle, valeur, unite, avecSigne, couleur) {
@@ -127,17 +80,6 @@ function remplirDetail(titre, piles, j, net, mode, unite) {
     ligneDetail(detail, "groupe", g.titre, total, unite, avecSigne, g.couleur);
     siennes.forEach(function (s) { ligneDetail(detail, "dispositif", s.libelle, s.valeurs[j], unite, avecSigne); });
     });
-  }
-
-function placerDetail(evenement) {
-  const marge = 16;
-  const largeur = detail.offsetWidth;
-  const hauteur = detail.offsetHeight;
-  let gauche = evenement.clientX + marge;
-  if (gauche + largeur > window.innerWidth - 8) gauche = evenement.clientX - marge - largeur;
-  const haut = Math.min(Math.max(8, evenement.clientY - hauteur / 2), window.innerHeight - hauteur - 8);
-  detail.style.left = Math.max(8, gauche) + "px";
-  detail.style.top = Math.max(8, haut) + "px";
   }
 
 function regrouper(piles, n) {
